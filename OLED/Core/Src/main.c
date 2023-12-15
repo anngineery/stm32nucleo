@@ -18,7 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "stdbool.h"
+#include <stdbool.h>
+#include <stdlib.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -47,8 +48,7 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 int screenWidth = 128;
 int screenHeight = 64;
-FontDef *fontPtr = &Font_6x8;
-//FontDef font = Font_6x8; --> this causes "initializer element is not constant" error
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -56,20 +56,14 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
+
 /* USER CODE BEGIN PFP */
-bool compareFonts(FontDef font1, FontDef font2);
+int *generateRandomCoordinate(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-bool compareFonts(FontDef font1, FontDef font2){
-	if (font1.FontHeight == font2.FontHeight && font1.FontWidth == font2.FontWidth && font1.data == font2.data){
-		return true;
-	}
-	else{
-		return false;
-	}
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -79,7 +73,18 @@ bool compareFonts(FontDef font1, FontDef font2){
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  //FontDef *fontPtr = &Font_6x8;
+	int *generateRandomCoordinate(void){
+	   int x, y;
+	   int *coordinate = (int *)malloc(sizeof(int) * 2);
+
+	   x = 0 + rand() / (RAND_MAX / (screenWidth - 0 + 1) + 1);
+	   y = 0 + rand() / (RAND_MAX / (screenHeight - 0 + 1) + 1);
+
+	   coordinate[0] = x;
+	   coordinate[1] = y;
+
+	   return coordinate;
+	}
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -112,10 +117,11 @@ int main(void)
   while (1)
   {
 	  ssd1306_Fill(Black);
-	  ssd1306_SetCursor(0, 0);
-	  ssd1306_WriteString("hi", *fontPtr, White);
+	  ssd1306_DrawRectangle(0, 0, screenWidth-1, screenHeight-1, White);
+	  int *coordinate = generateRandomCoordinate();
+	  ssd1306_FillRectangle(coordinate[0], coordinate[1], coordinate[0]+3, coordinate[1]+3, White);
 	  ssd1306_UpdateScreen();
-	  //ssd1306_TestAll();
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -280,13 +286,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
-	if (GPIO_Pin == GPIO_PIN_13){
-		if (compareFonts(*fontPtr, Font_6x8)) fontPtr = &Font_7x10;
-		else if (compareFonts(*fontPtr, Font_7x10)) fontPtr = &Font_11x18;
-		else if (compareFonts(*fontPtr, Font_11x18)) fontPtr = &Font_16x24;
-		else if (compareFonts(*fontPtr, Font_16x24)) fontPtr = &Font_16x26;
-		else fontPtr = &Font_6x8;
-	}
+	;
 }
 
 /* USER CODE END 4 */
