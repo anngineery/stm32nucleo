@@ -20,6 +20,7 @@
 #include "main.h"
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -28,7 +29,12 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-
+typedef struct {
+	SSD1306_VERTEX leftTop;
+	uint8_t width;
+	uint8_t height;
+	bool backward;
+} PADDLE;
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -46,9 +52,7 @@ I2C_HandleTypeDef hi2c1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-int screenWidth = 128;
-int screenHeight = 64;
-
+static PADDLE paddle;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -58,7 +62,8 @@ static void MX_USART2_UART_Init(void);
 static void MX_I2C1_Init(void);
 
 /* USER CODE BEGIN PFP */
-int *generateRandomCoordinate(void);
+void paddleInit();
+void generateRandomCoordinate(SSD1306_VERTEX *coordinate);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -73,17 +78,25 @@ int *generateRandomCoordinate(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-	int *generateRandomCoordinate(void){
-	   int x, y;
-	   int *coordinate = (int *)malloc(sizeof(int) * 2);
+	SSD1306_VERTEX ballCoordinate;
+	void paddleInit(){
+		paddle.leftTop.x = 0;
+		paddle.leftTop.y = 60;
+		paddle.width = 20;
+		paddle.height = 3;
+		paddle.backward = false;
+	}
 
-	   x = 0 + rand() / (RAND_MAX / (screenWidth - 0 + 1) + 1);
-	   y = 0 + rand() / (RAND_MAX / (screenHeight - 0 + 1) + 1);
+	void generateRandomCoordinate(SSD1306_VERTEX *coordinate){
+		uint8_t x, y;
 
-	   coordinate[0] = x;
-	   coordinate[1] = y;
+		//srand(time(0)); TODO: need to implement _gettimeofday func to work
 
-	   return coordinate;
+		x = 0 + rand() / (RAND_MAX / (SSD1306_WIDTH - 0 + 1) + 1);
+		y = 0 + rand() / (RAND_MAX / (SSD1306_HEIGHT - 0 + 1) + 1);
+
+		coordinate->x = x;
+		coordinate->y = y;
 	}
   /* USER CODE END 1 */
 
@@ -110,6 +123,8 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_Delay(1000);
   ssd1306_Init();
+  paddleInit();
+  generateRandomCoordinate(&ballCoordinate);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,9 +132,18 @@ int main(void)
   while (1)
   {
 	  ssd1306_Fill(Black);
-	  ssd1306_DrawRectangle(0, 0, screenWidth-1, screenHeight-1, White);
-	  int *coordinate = generateRandomCoordinate();
-	  ssd1306_FillRectangle(coordinate[0], coordinate[1], coordinate[0]+3, coordinate[1]+3, White);
+	  ssd1306_FillRectangle(ballCoordinate.x, ballCoordinate.y, ballCoordinate.x+3, ballCoordinate.y+3, White);
+
+	  if (paddle.backward && paddle.leftTop.x > 0){
+		  paddle.leftTop.x--;
+	  }
+	  else if (!paddle.backward && paddle.leftTop.x + paddle.width < SSD1306_WIDTH - 1){
+		  paddle.leftTop.x++;
+	  }
+	  else{
+		  paddle.backward = !paddle.backward;
+	  }
+	  ssd1306_FillRectangle(paddle.leftTop.x, paddle.leftTop.y, paddle.leftTop.x + paddle.width, paddle.leftTop.y + paddle.height, White);
 	  ssd1306_UpdateScreen();
 
     /* USER CODE END WHILE */
